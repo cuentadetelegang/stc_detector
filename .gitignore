@@ -1,0 +1,5 @@
+# excluir entornos y builds locales
+venv/
+.buildozer/
+__pycache__/
+*.pyc
