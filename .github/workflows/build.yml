@@ -1,32 +1,50 @@
 name: Build APK
 
-on:               # ← ESTA sección es la que faltaba
-  workflow_dispatch:   # permite lanzarlo manualmente
-  push:                # (opcional) se ejecuta cada push a main
-    branches: [main]
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Instalar dependencias de sistema
-      run: |
-        sudo apt update
-        sudo apt install -y python3-pip zip unzip openjdk-17-jdk
-
-    - name: Instalar Buildozer
-      run: pip install buildozer cython==0.29.36
-
+    # --- instalar Buildozer con SDK y licencias ---
     - name: Construir APK
-      run: buildozer android debug
+      run: |
+        cd src
+        buildozer init || true
+        cp ../buildozer.spec .
+        
+        # Instalar herramientas necesarias
+        sudo apt update
+        sudo apt install -y openjdk-17-jdk wget unzip
 
-    - name: Subir artefacto (APK)
-      uses: actions/upload-artifact@v4
+        # Instalar command line tools (porque Build-Tools 36 ya no se puede usar sin aceptar licencia)
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip -O cmdtools.zip
+        unzip cmdtools.zip -d $HOME/android-sdk/cmdline-tools
+        export PATH=$HOME/android-sdk/cmdline-tools/cmdline-tools/bin:$PATH
+
+        # Aceptar licencias
+        yes | sdkmanager --sdk_root=$HOME/android-sdk --licenses || true
+
+        # Construir APK
+        buildozer android debug
+
+    # --- compilar APK ---
+    - name: Build debug APK
+      run: |
+        export ANDROID_HOME=$HOME/android
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/cmdline-tools/bin:$ANDROID_HOME/platform-tools
+        yes | buildozer -v android debug
+
+    # --- subir artefacto ---
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
       with:
-        name: app-stc
+        name: stc-detector-debug
         path: bin/*.apk
-# Este comentario fuerza a Git a ver un cambio
