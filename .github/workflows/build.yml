@@ -24,9 +24,9 @@ jobs:
     - name: Construir APK
       run: buildozer android debug
 
-    - name: Publicar APK como artefacto
-      uses: actions/upload-artifact@v3
+    - name: Subir artefacto (APK)
+      uses: actions/upload-artifact@v4
       with:
-        name: stc_detector.apk
+        name: app-stc
         path: bin/*.apk
 # Este comentario fuerza a Git a ver un cambio
